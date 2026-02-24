@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "mineru": {
-      "command": "python",
-      "args": ["./server.py", "--token", "xxx"]
-    }
-  }
-}
