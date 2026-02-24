@@ -1,17 +1,17 @@
 ---
-name: pdf-to-markdown
-description: Convert a PDF to Markdown via MinerU API, then analyze or save the result.
+name: convert-to-markdown
+description: Convert a document (PDF, DOC, DOCX, PPT, PPTX, PNG, JPG, JPEG, HTML) to Markdown via MinerU API, then analyze or save the result.
 ---
 
-# PDF to Markdown Conversion & Analysis
+# Document to Markdown Conversion & Analysis
 
-Use the MinerU MCP server to convert a PDF file to Markdown. Supports both URL and local file paths.
+Use the MinerU MCP server to convert a document to Markdown. Supports both URL and local file paths. Supports PDF, DOC, DOCX, PPT, PPTX, PNG, JPG, JPEG, HTML formats.
 
 ## Input
 
 The user will provide:
 
-1. **PDF source** (required): a URL or a local file path
+1. **Document source** (required): a URL or a local file path
 2. **Output path** (optional): a local path to save the converted result
 
 ## Important Rules
@@ -21,15 +21,21 @@ The user will provide:
 
 ## Workflow
 
-### 1. Determine the PDF source type
+### 1. Determine the document source type
 
 - If the input looks like a URL (starts with `http://` or `https://`), use it directly.
 - If the input is a local file path, pass it directly to the MCP tool — the server will automatically upload the file via the batch upload API and return a `batch_id` for tracking.
 
 ### 2. Convert
 
-- If the user provided an **output path**, call the MCP tool `convert_pdf_to_markdown` with both `url` (the URL or local file path) and `output_path`. This will submit the task, poll until completion, and download the result zip to the specified path.
+- If the user provided an **output path**, call the MCP tool `convert_to_markdown` (or `convert_pdf_to_markdown`) with both `url` (the URL or local file path) and `output_path`. This will submit the task, poll until completion, and download the result zip to the specified path.
 - If the user did **not** provide an output path, use `./temp/<filename>.zip` as the default output path.
+- The server **auto-detects file type** and configures optimal settings:
+  - HTML files use the `MinerU-HTML` model
+  - Image files automatically enable OCR
+  - Large PDFs are handled automatically based on file size:
+    - **>600 pages but ≤200MB**: Uses `page_ranges` parameter to split processing into batches (no physical file splitting needed, the API handles it)
+    - **>200MB**: Must physically split the PDF into smaller chunk files first (the API rejects uploads over 200MB), then upload and process each chunk separately
 
 ### 3. Extract & Read
 

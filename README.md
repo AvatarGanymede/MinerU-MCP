@@ -1,13 +1,17 @@
-# MinerU PDF to Markdown MCP Server
+# MinerU Document to Markdown MCP Server
 
-一个 Model Context Protocol (MCP) 服务器，用于通过 MinerU API 将 PDF 文件转换为 Markdown 格式。支持 URL 和本地文件两种输入方式。
+[English](README_EN.md) | 中文
+
+一个 Model Context Protocol (MCP) 服务器，用于通过 MinerU API 将多种格式文档转换为 Markdown 格式。支持 URL 和本地文件两种输入方式。
 
 ## 功能特点
 
 - 🔄 使用 Python requests 调用 MinerU API
-- 📄 支持 PDF 转 Markdown
+- 📄 支持多种格式：PDF, DOC, DOCX, PPT, PPTX, PNG, JPG, JPEG, HTML
 - 📁 支持本地文件自动上传解析
 - 🔍 支持 OCR、公式识别、表格识别
+- 🧠 智能参数自动配置（根据文件类型自动选择模型和参数）
+- 📦 大文件智能拆分（>200MB 自动物理拆分，>600 页自动使用 page_ranges）
 - ⚡ 提供完整的转换工作流（提交任务 → 轮询状态 → 获取结果）
 
 ## 安装
@@ -36,40 +40,69 @@ pip install -r requirements.txt
   "mcpServers": {
     "mineru": {
       "command": "python",
-      "args": ["C:/path/to/server.py", "--token", "your_mineru_api_token"]
+      "args": ["C:/path/to/server.py"],
+      "env": {
+        "MINERU_API_KEY": "your_mineru_api_token"
+      }
     }
   }
 }
 ```
 
-注意：将路径替换为你的实际路径，将 `your_mineru_api_token` 替换为你的 MinerU API Token。
+注意：将路径替换为你的实际路径，将 `your_mineru_api_token` 替换为你的 MinerU API Token（在 [https://mineru.net/apiManage/token](https://mineru.net/apiManage/token) 申请）。
+
+## 支持的文件格式
+
+| 格式 | 扩展名 | 自动配置 |
+|------|--------|---------|
+| PDF | .pdf | 默认使用 vlm 模型 |
+| Word | .doc, .docx | 默认使用 vlm 模型 |
+| PowerPoint | .ppt, .pptx | 默认使用 vlm 模型 |
+| 图片 | .png, .jpg, .jpeg | 自动开启 OCR |
+| 网页 | .html | 自动使用 MinerU-HTML 模型 |
+
+## 大文件处理
+
+服务器自动处理超大文件，无需手动干预：
+
+- **文件 >200MB（仅 PDF）**：自动物理拆分为多个小文件，分别处理后返回结果
+- **文件 >600 页（仅 PDF）**：自动使用 page_ranges 参数分段处理
+- **拆分算法**：同时考虑文件大小（180MB/片）和页数（600页/片）双重约束，取较大值确保每个分片同时满足两个限制
 
 ## 使用方法
 
 ### 工具 1: create_parse_task
 
-创建一个 PDF 解析任务。支持 URL 或本地文件路径，本地文件会自动上传。
+创建一个文档解析任务。支持 URL 或本地文件路径，本地文件会自动上传。
 
 **参数：**
-- `url` (必需): PDF 文件的 URL 或本地文件路径
-- `model_version` (可选): 模型版本，`pipeline` 或 `vlm`，默认 `vlm`
-- `is_ocr` (可选): 是否启用 OCR，默认 `false`
+- `url` (必需): 文档的 URL 或本地文件路径（支持 PDF, DOC, DOCX, PPT, PPTX, PNG, JPG, JPEG, HTML）
+- `model_version` (可选): 模型版本，根据文件类型自动选择（vlm / pipeline / MinerU-HTML）
+- `is_ocr` (可选): 是否启用 OCR（图片格式自动启用），默认 `false`
 - `enable_formula` (可选): 是否启用公式识别，默认 `true`
 - `enable_table` (可选): 是否启用表格识别，默认 `true`
 
 **返回值：**
 - URL 输入：返回 `task_id`
 - 本地文件输入：返回 `batch_id`
+- 大文件拆分：返回 `batch_ids` 列表
 
 **示例：**
 ```
-# URL 方式
-请使用 create_parse_task 工具解析这个 PDF：
-https://cdn-mineru.openxlab.org.cn/demo/example.pdf
+# PDF 文件
+请解析这个 PDF：https://example.com/report.pdf
 
-# 本地文件方式
-请使用 create_parse_task 工具解析本地 PDF：
-C:/Documents/report.pdf
+# Word 文档
+请解析本地 Word 文档：C:/Documents/report.docx
+
+# PowerPoint 文件
+请解析本地 PPT：C:/Documents/slides.pptx
+
+# 图片（自动 OCR）
+请解析这张图片：C:/Documents/scan.png
+
+# HTML 网页
+请解析本地 HTML：C:/Documents/page.html
 ```
 
 ### 工具 2: get_task_status
@@ -82,15 +115,6 @@ C:/Documents/report.pdf
 
 > 两个参数至少提供一个。
 
-**示例：**
-```
-# 查询 URL 解析任务
-请检查任务状态：task_id = abc-123-def
-
-# 查询本地文件上传任务
-请检查任务状态：batch_id = xyz-456-ghi
-```
-
 ### 工具 3: download_result
 
 下载解析结果 zip 文件。
@@ -99,65 +123,67 @@ C:/Documents/report.pdf
 - `zip_url` (必需): 结果文件的 URL
 - `output_path` (必需): 本地保存路径
 
-**示例：**
-```
-请下载结果到本地：
-zip_url: https://cdn-mineru.openxlab.org.cn/pdf/xxx.zip
-output_path: result.zip
-```
+### 工具 4: convert_to_markdown (推荐)
 
-### 工具 4: convert_pdf_to_markdown (推荐)
-
-完整的转换工作流，自动提交任务、等待完成并下载结果。支持 URL 或本地文件路径。
+完整的转换工作流，自动提交任务、等待完成并下载结果。支持所有格式的 URL 或本地文件路径。
 
 **参数：**
-- `url` (必需): PDF 文件的 URL 或本地文件路径
+- `url` (必需): 文档的 URL 或本地文件路径
 - `output_path` (必需): 结果 zip 文件的本地保存路径
-- `model_version` (可选): 模型版本，默认 `vlm`
+- `model_version` (可选): 模型版本（自动检测），默认 `vlm`
 - `max_wait_seconds` (可选): 最大等待时间（秒），默认 300
 - `poll_interval` (可选): 轮询间隔（秒），默认 10
 
 **示例：**
 ```
-# URL 方式
-帮我把这个 PDF 转成 Markdown，保存到 C:/output/result.zip：
-https://cdn-mineru.openxlab.org.cn/demo/example.pdf
-
-# 本地文件方式
-帮我把本地 PDF 转成 Markdown：
+# 转换 PDF
+帮我把这个 PDF 转成 Markdown：
 url: C:/Documents/report.pdf
+output_path: C:/output/result.zip
+
+# 转换 Word 文档
+帮我把这个 Word 文档转成 Markdown：
+url: C:/Documents/report.docx
+output_path: C:/output/result.zip
+
+# 转换 PPT
+帮我把这个 PPT 转成 Markdown：
+url: C:/Documents/slides.pptx
 output_path: C:/output/result.zip
 ```
 
+> 注：`convert_pdf_to_markdown` 仍可使用（向后兼容），功能与 `convert_to_markdown` 完全相同。
+
 ## Claude Code Skill 快捷用法
 
-本项目提供了 `/pdf-to-markdown` skill，可在 Claude Code 中通过斜杠命令快速调用 PDF 转 Markdown 功能。
+本项目提供了 `/convert-to-markdown` skill，可在 Claude Code 中通过斜杠命令快速调用文档转 Markdown 功能。
 
 ### 基本用法
 
 ```
-/pdf-to-markdown <PDF路径或URL> [指令]
+/convert-to-markdown <文档路径或URL> [指令]
 ```
 
 ### 示例
 
 ```bash
-# 转换本地文件并分析内容
-/pdf-to-markdown C:/Documents/report.pdf 分析并总结这个文档内容
+# 转换 PDF
+/convert-to-markdown C:/Documents/report.pdf 分析并总结这个文档内容
 
-# 转换在线 PDF
-/pdf-to-markdown https://example.com/paper.pdf 提取文档要点
+# 转换 Word 文档
+/convert-to-markdown C:/Documents/report.docx 提取文档要点
 
-# 仅转换，不分析
-/pdf-to-markdown C:/Documents/report.pdf
+# 转换 PPT
+/convert-to-markdown C:/Documents/slides.pptx
 
-# 指定输出路径
-/pdf-to-markdown C:/Documents/report.pdf 保存到 C:/output/result.zip
+# 转换图片
+/convert-to-markdown C:/Documents/scan.png 识别图片中的文字
 ```
 
 ### 说明
 
 - 支持本地文件路径和 HTTP(S) URL 两种输入
+- 支持 PDF, DOC, DOCX, PPT, PPTX, PNG, JPG, JPEG, HTML 格式
 - 未指定输出路径时，默认保存到 `./temp/<文件名>.zip`
 - 转换完成后自动解压 zip 并读取 Markdown 内容
 - 可附加自然语言指令，让 Claude 对转换结果进行分析、总结或回答问题
@@ -166,8 +192,8 @@ output_path: C:/output/result.zip
 
 根据 MinerU API 文档：
 
-- 单个文件不超过 200MB
-- 文件页数不超过 600 页
+- 单个文件不超过 200MB（PDF 超过此限制会自动拆分）
+- 文件页数不超过 600 页（超过此限制会自动使用 page_ranges）
 - 每账号每天有 2000 页高优先级额度
 - 不支持 GitHub、AWS 等国外 URL（网络限制）
 
@@ -197,6 +223,11 @@ output_path: C:/output/result.zip
 4. **查询批量结果**: `GET https://mineru.net/api/v4/extract-results/batch/{batch_id}`
 5. **下载结果**: `GET {zip_url}` 流式下载到本地
 
+**大文件处理流程（>200MB PDF）：**
+1. **智能拆分**: 同时考虑大小(180MB)和页数(600页)约束
+2. **逐片上传**: 每个分片独立上传和处理
+3. **分别下载**: 每个分片结果独立下载
+
 ## 故障排除
 
 ### 问题：Token 无效
@@ -209,10 +240,16 @@ output_path: C:/output/result.zip
 ### 问题：解析失败
 
 可能原因：
-1. PDF 文件 URL 无法访问
-2. 文件大小或页数超限
-3. 文件格式不支持
+1. 文件 URL 无法访问
+2. 文件格式不支持（请检查是否在支持列表中）
+3. 文件为空（0字节）
 4. 网络问题（国外 URL）
+
+### 问题：大文件拆分失败
+
+可能原因：
+1. 未安装 PyPDF2（运行 `pip install PyPDF2>=3.0.0`）
+2. 非 PDF 格式的大文件无法自动拆分，需手动缩小
 
 ## 许可证
 
