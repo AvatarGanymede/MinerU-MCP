@@ -15,28 +15,37 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 const PORT = parseInt(process.env.PORT || "10000", 10);
 
 // ---------------------------------------------------------------------------
-// Config resolution: from ?config=base64(json) or MINERU_API_KEY env
+// Config resolution: Smithery passes via header (x-mineru-api-key), query
+// (?mineruApiKey= or ?config=base64), or MINERU_API_KEY env
 // ---------------------------------------------------------------------------
-function parseConfigFromRequest(req: IncomingMessage): Record<string, unknown> | null {
+function getConfig(req: IncomingMessage): { mineruApiKey?: string } {
+  // 1. Header (Smithery recommended for secrets)
+  const headerKey = req.headers["x-mineru-api-key"];
+  if (typeof headerKey === "string" && headerKey) {
+    return { mineruApiKey: headerKey };
+  }
+  // 2. Query ?mineruApiKey= (Smithery default)
   const url = req.url ?? "";
   const idx = url.indexOf("?");
-  if (idx === -1) return null;
-  const search = new URLSearchParams(url.slice(idx + 1));
-  const configB64 = search.get("config");
-  if (!configB64) return null;
-  try {
-    const json = Buffer.from(configB64, "base64url").toString("utf-8");
-    return JSON.parse(json) as Record<string, unknown>;
-  } catch {
-    return null;
+  if (idx !== -1) {
+    const search = new URLSearchParams(url.slice(idx + 1));
+    const q = search.get("mineruApiKey");
+    if (typeof q === "string" && q) return { mineruApiKey: q };
+    // 3. Query ?config=base64(json)
+    const configB64 = search.get("config");
+    if (configB64) {
+      try {
+        const json = Buffer.from(configB64, "base64url").toString("utf-8");
+        const parsed = JSON.parse(json) as Record<string, unknown>;
+        if (typeof parsed.mineruApiKey === "string") {
+          return { mineruApiKey: parsed.mineruApiKey };
+        }
+      } catch {
+        /* ignore */
+      }
+    }
   }
-}
-
-function getConfig(req: IncomingMessage): { mineruApiKey?: string } {
-  const fromQuery = parseConfigFromRequest(req);
-  if (fromQuery && typeof fromQuery.mineruApiKey === "string") {
-    return { mineruApiKey: fromQuery.mineruApiKey };
-  }
+  // 4. Environment
   const fromEnv = process.env.MINERU_API_KEY;
   if (fromEnv) return { mineruApiKey: fromEnv };
   return {};
@@ -48,7 +57,13 @@ function getConfig(req: IncomingMessage): { mineruApiKey?: string } {
 const configSchemaJson = zodToJsonSchema(configSchema, {
   target: "openApi3",
   $refStrategy: "none",
-});
+}) as Record<string, unknown>;
+
+// Smithery: x-from tells gateway to pass mineruApiKey via header (for secrets)
+const props = (configSchemaJson.properties ?? {}) as Record<string, Record<string, unknown>>;
+if (props.mineruApiKey) {
+  props.mineruApiKey["x-from"] = { header: "x-mineru-api-key" };
+}
 
 const MCP_CONFIG_JSON = JSON.stringify({
   configSchema: configSchemaJson,
