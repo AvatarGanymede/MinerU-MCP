@@ -93,11 +93,13 @@ Create `.mcp.json` in the project root (Claude Code) or edit `claude_desktop_con
 
 > **Note**: The TypeScript version only supports URL input. Local file upload and large file splitting are not available. Use the Python version if you need those features.
 
+**Local HTTP server** (optional): `npm run start:http` or `MINERU_API_KEY=xxx npx tsx src/server-http.ts` — listens on port 10000 by default, exposes `/mcp` and `/.well-known/mcp-config`.
+
 For both options, replace `your_mineru_api_token` with your MinerU API Token (obtain at [https://mineru.net/apiManage/token](https://mineru.net/apiManage/token)).
 
 ### Deploy to Render (Deploy via URL, Free)
 
-Deploy the TypeScript MCP as a public HTTPS service on [Render](https://render.com), then register it on Smithery using "Deploy via URL" for free distribution.
+Deploy the TypeScript MCP as a public HTTPS service on [Render](https://render.com), then register it on Smithery using "Deploy via URL" for free distribution. **No smithery dev required** — runs as a self-hosted HTTP server.
 
 1. **Fork & Push**: Ensure this repo is pushed to GitHub
 2. **Create Blueprint**: Go to [Render Dashboard](https://dashboard.render.com/) → New → Blueprint
@@ -106,9 +108,9 @@ Deploy the TypeScript MCP as a public HTTPS service on [Render](https://render.c
 5. **Get URL**: You'll get an HTTPS URL like `https://mineru-mcp.onrender.com`
 6. **Register on Smithery**: At [Smithery New Server](https://smithery.ai/servers/new), choose External MCP / Deploy via URL and enter that URL
 
-> **Note**: Do not set the `MINERU_API_KEY` environment variable. Each user enters their own API key when adding the MCP on Smithery (via the configSchema form).
+> **Smithery Deploy via URL**: Do not set `MINERU_API_KEY`; each user enters their own API key when adding the MCP on Smithery.
 >
-> **SMITHERY_API_KEY (required)**: Without this, the Smithery CLI waits for interactive input and causes Render deploy to fail (exit 130). Get a free API key at [Smithery](https://smithery.ai), then add `SMITHERY_API_KEY` in Render Dashboard → your service → Environment.
+> **Self-hosted single-tenant**: Set `MINERU_API_KEY` in Render Environment to use one key for all requests.
 
 ## Supported File Formats
 

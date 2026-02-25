@@ -6,14 +6,16 @@
   "scripts": {
     "build": "tsc",
     "start": "tsx src/main.ts",
+    "start:http": "tsx src/server-http.ts",
     "dev": "npx @smithery/cli dev",
-    "start:render": "smithery dev --no-tunnel --no-open --port ${PORT:-10000}"
+    "start:render": "tsx src/server-http.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
     "@smithery/cli": "^4.2.1",
     "tsx": "^4.0.0",
-    "zod": "^3.23.0"
+    "zod": "^3.23.0",
+    "zod-to-json-schema": "^3.25.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

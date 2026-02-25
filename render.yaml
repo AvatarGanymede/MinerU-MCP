@@ -1,6 +1,10 @@
 # Render Blueprint - MinerU MCP Server
 # Deploy: https://dashboard.render.com/ > New > Blueprint > Connect this repo
 # Docs: https://docs.render.com/blueprint-spec
+#
+# Self-hosted HTTP server (no smithery dev dependency).
+# For Smithery "Deploy via URL": users provide mineruApiKey via config form.
+# For single-tenant self-host: set MINERU_API_KEY in Render Environment.
 
 services:
   - type: web
@@ -13,7 +17,6 @@ services:
         value: "20"
       - key: PORT
         value: "10000"
-      # Required: Smithery CLI skips interactive prompt when this is set (get free key from https://smithery.ai)
-      - key: SMITHERY_API_KEY
+      # Optional: set for single-tenant self-host; omit for Smithery Deploy via URL
+      - key: MINERU_API_KEY
         sync: false
-    # Do NOT set MINERU_API_KEY here - each user provides their own via Smithery configSchema

@@ -93,11 +93,13 @@ npm install
 
 > **注意**：TypeScript 版仅支持 URL 输入，不支持本地文件上传和大文件拆分。如需这些功能请使用 Python 版。
 
+**本地 HTTP 服务**（可选）：`npm run start:http` 或 `MINERU_API_KEY=xxx npx tsx src/server-http.ts`，默认监听 10000 端口，暴露 `/mcp` 和 `/.well-known/mcp-config`。
+
 两种方式均需将 `your_mineru_api_token` 替换为你的 MinerU API Token（在 [https://mineru.net/apiManage/token](https://mineru.net/apiManage/token) 申请）。
 
 ### 部署到 Render（Deploy via URL，免费）
 
-使用 [Render](https://render.com) 将 TypeScript 版 MCP 部署为公开 HTTPS 服务，然后在 Smithery 选择「Deploy via URL」即可免费分发。
+使用 [Render](https://render.com) 将 TypeScript 版 MCP 部署为公开 HTTPS 服务，然后在 Smithery 选择「Deploy via URL」即可免费分发。**无需 smithery dev**，自建 HTTP 服务即可运行。
 
 1. **Fork 并推送**：确保本仓库代码已推送到 GitHub
 2. **创建 Blueprint**：打开 [Render Dashboard](https://dashboard.render.com/) → New → Blueprint
@@ -106,9 +108,9 @@ npm install
 5. **获取 URL**：部署完成后会得到 `https://mineru-mcp.onrender.com` 之类的 HTTPS 地址
 6. **登记到 Smithery**：在 [Smithery New Server](https://smithery.ai/servers/new) 选择 External MCP / Deploy via URL，填入上述 URL
 
-> **注意**：不要设置 `MINERU_API_KEY` 环境变量，每个用户会在 Smithery 添加 MCP 时填写自己的 API Key（通过 configSchema 表单）。
+> **Smithery Deploy via URL**：不设置 `MINERU_API_KEY`，每个用户会在 Smithery 添加 MCP 时填写自己的 API Key。
 >
-> **SMITHERY_API_KEY（必需）**：Smithery CLI 在无此变量时会等待交互输入，导致 Render 部署失败（exit 130）。在 [Smithery](https://smithery.ai) 注册后可免费获取 API Key，然后在 Render Dashboard → 该服务 → Environment 中添加 `SMITHERY_API_KEY`。
+> **自托管单租户**：在 Render Environment 中设置 `MINERU_API_KEY`，则所有请求共用该 Key。
 
 ## 支持的文件格式
 
