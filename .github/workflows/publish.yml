@@ -7,6 +7,7 @@ on:
       - "src/**"
       - "package.json"
       - "smithery.yaml"
+  workflow_dispatch:
 
 jobs:
   publish:
