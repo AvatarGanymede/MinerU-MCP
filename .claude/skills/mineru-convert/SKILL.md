@@ -1,5 +1,5 @@
 ---
-name: smithery-convert
+name: mineru-convert
 description: Convert a document URL to Markdown via the Smithery-deployed MinerU MCP server (TypeScript version). Downloads and extracts results to temp/ directory.
 ---
 
