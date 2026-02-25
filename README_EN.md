@@ -26,14 +26,14 @@ pip install -r requirements.txt
 
 Visit [https://mineru.net/apiManage/token](https://mineru.net/apiManage/token) to register and obtain an API Token.
 
-### 3. Configure Claude Desktop
+### 3. Configure MCP Client
+
+#### Option A: Python version (full features, supports local files and large file splitting)
 
 Edit the Claude Desktop configuration file:
 
 **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
 **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
-
-Add the following configuration:
 
 ```json
 {
@@ -49,7 +49,51 @@ Add the following configuration:
 }
 ```
 
-Replace the path with your actual path, and `your_mineru_api_token` with your MinerU API Token (obtain at [https://mineru.net/apiManage/token](https://mineru.net/apiManage/token)).
+#### Option B: TypeScript version (for Smithery deployment and local dev)
+
+Requires Node.js 20+ and project dependencies:
+
+```bash
+npm install
+```
+
+Create `.mcp.json` in the project root (Claude Code) or edit `claude_desktop_config.json` (Claude Desktop):
+
+**macOS / Linux:**
+
+```json
+{
+  "mcpServers": {
+    "mineru": {
+      "command": "npx",
+      "args": ["tsx", "src/main.ts"],
+      "env": {
+        "MINERU_API_KEY": "your_mineru_api_token"
+      }
+    }
+  }
+}
+```
+
+**Windows:**
+
+```json
+{
+  "mcpServers": {
+    "mineru": {
+      "command": "cmd",
+      "args": ["/c", "npx", "tsx", "src/main.ts"],
+      "env": {
+        "MINERU_API_KEY": "your_mineru_api_token"
+      }
+    }
+  }
+}
+```
+
+> **Note**: The TypeScript version only supports URL input. Local file upload and large file splitting are not available. Use the Python version if you need those features.
+
+For both options, replace `your_mineru_api_token` with your MinerU API Token (obtain at [https://mineru.net/apiManage/token](https://mineru.net/apiManage/token)).
 
 ## Supported File Formats
 

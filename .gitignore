@@ -2,3 +2,9 @@
 .claude/settings.local.json
 __pycache__/
 temp/
+
+# Node.js / Smithery deployment
+node_modules/
+dist/
+*.js.map
+.smithery/

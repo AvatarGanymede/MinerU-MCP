@@ -26,14 +26,14 @@ pip install -r requirements.txt
 
 访问 [https://mineru.net](https://mineru.net) 注册并申请 API Token。
 
-### 3. 配置 Claude Desktop
+### 3. 配置 MCP 客户端
+
+#### 方式一：Python 版（功能完整，支持本地文件和大文件拆分）
 
 编辑 Claude Desktop 配置文件：
 
 **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
 **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
-
-添加以下配置：
 
 ```json
 {
@@ -49,7 +49,51 @@ pip install -r requirements.txt
 }
 ```
 
-注意：将路径替换为你的实际路径，将 `your_mineru_api_token` 替换为你的 MinerU API Token（在 [https://mineru.net/apiManage/token](https://mineru.net/apiManage/token) 申请）。
+#### 方式二：TypeScript 版（适用于 Smithery 部署和本地开发）
+
+需要先安装 Node.js 20+ 和项目依赖：
+
+```bash
+npm install
+```
+
+在项目根目录创建 `.mcp.json`（Claude Code）或编辑 `claude_desktop_config.json`（Claude Desktop）：
+
+**macOS / Linux:**
+
+```json
+{
+  "mcpServers": {
+    "mineru": {
+      "command": "npx",
+      "args": ["tsx", "src/main.ts"],
+      "env": {
+        "MINERU_API_KEY": "your_mineru_api_token"
+      }
+    }
+  }
+}
+```
+
+**Windows:**
+
+```json
+{
+  "mcpServers": {
+    "mineru": {
+      "command": "cmd",
+      "args": ["/c", "npx", "tsx", "src/main.ts"],
+      "env": {
+        "MINERU_API_KEY": "your_mineru_api_token"
+      }
+    }
+  }
+}
+```
+
+> **注意**：TypeScript 版仅支持 URL 输入，不支持本地文件上传和大文件拆分。如需这些功能请使用 Python 版。
+
+两种方式均需将 `your_mineru_api_token` 替换为你的 MinerU API Token（在 [https://mineru.net/apiManage/token](https://mineru.net/apiManage/token) 申请）。
 
 ## 支持的文件格式
 
