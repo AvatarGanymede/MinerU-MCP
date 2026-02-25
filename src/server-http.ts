@@ -69,6 +69,22 @@ const MCP_CONFIG_JSON = JSON.stringify({
   configSchema: configSchemaJson,
 });
 const HEALTH_JSON = JSON.stringify({ status: "ok", service: "mineru-mcp" });
+const READY_JSON = JSON.stringify({ status: "ready", service: "mineru-mcp" });
+
+/** Standard error response per MCP best practices */
+function sendError(
+  res: ServerResponse,
+  status: number,
+  code: string,
+  message: string
+) {
+  const body = JSON.stringify({ error: { code, message } });
+  res.writeHead(status, {
+    "Content-Type": "application/json",
+    "Content-Length": Buffer.byteLength(body, "utf-8"),
+  });
+  res.end(body);
+}
 
 // Smithery server scanning: https://smithery.ai/docs/build/external#server-scanning
 const FORMATS_DESC = "Supported formats: PDF, DOC, DOCX, PPT, PPTX, PNG, JPG, JPEG, HTML";
@@ -78,60 +94,60 @@ const SERVER_CARD_JSON = JSON.stringify({
   tools: [
     {
       name: "create_parse_task",
-      description: `Create a document parsing task on MinerU API. ${FORMATS_DESC}. Accepts a document URL and returns a task_id for tracking.`,
+      description: `Create a document parsing task on MinerU API. Purpose: Submit a document URL for async conversion. Returns task_id for tracking. Constraints: ${FORMATS_DESC} only. Side effect: Calls MinerU API.`,
       inputSchema: {
         type: "object",
         properties: {
-          url: { type: "string", description: `URL of the document. ${FORMATS_DESC}` },
-          model_version: { type: "string", default: "vlm" },
-          is_ocr: { type: "boolean", default: false },
-          enable_formula: { type: "boolean", default: true },
-          enable_table: { type: "boolean", default: true },
+          url: { type: "string", description: `URL of the document to parse. ${FORMATS_DESC}` },
+          model_version: { type: "string", default: "vlm", description: "Auto-detected: vlm for most, MinerU-HTML for HTML" },
+          is_ocr: { type: "boolean", default: false, description: "Enable OCR (auto-enabled for images)" },
+          enable_formula: { type: "boolean", default: true, description: "Enable formula recognition" },
+          enable_table: { type: "boolean", default: true, description: "Enable table recognition" },
         },
         required: ["url"],
       },
     },
     {
       name: "get_task_status",
-      description: "Check the status of a document parsing task. Accepts task_id or batch_id. Returns task state and result download URL when done.",
+      description: "Check the status of a document parsing task. Purpose: Poll task progress and get download URL when done. Provide task_id (URL) or batch_id (file upload). Returns state and full_zip_url. Side effect: Read-only API call.",
       inputSchema: {
         type: "object",
         properties: {
-          task_id: { type: "string" },
-          batch_id: { type: "string" },
+          task_id: { type: "string", description: "Task ID returned from create_parse_task (URL-based)" },
+          batch_id: { type: "string", description: "Batch ID returned from create_parse_task (file upload)" },
         },
       },
     },
     {
       name: "download_result",
-      description: "Get the download URL for a completed parsing result.",
+      description: "Get the download URL for a completed parsing result. After calling, download with curl to ./temp/ and unzip: curl -L -o ./temp/<name>.zip \"<zip_url>\" --retry 3 -f -s -S && unzip -o ./temp/<name>.zip -d ./temp/<name>.",
       inputSchema: {
         type: "object",
-        properties: { zip_url: { type: "string" } },
+        properties: { zip_url: { type: "string", description: "URL of the result zip file (from get_task_status). Use curl to download to ./temp/, then unzip." } },
         required: ["zip_url"],
       },
     },
     {
       name: "convert_to_markdown",
-      description: `Complete workflow: Submit a document URL, wait for completion, return the result download URL. ${FORMATS_DESC}.`,
+      description: `One-step document conversion. Purpose: Submit URL, poll until done, return download link. Constraints: ${FORMATS_DESC}. Auto-configures model and OCR. Side effect: Creates task and polls MinerU API. Use for quick conversion.`,
       inputSchema: {
         type: "object",
         properties: {
-          url: { type: "string" },
-          model_version: { type: "string", default: "vlm" },
-          max_wait_seconds: { type: "number", default: 300 },
-          poll_interval: { type: "number", default: 10 },
+          url: { type: "string", description: `URL of the document. ${FORMATS_DESC}` },
+          model_version: { type: "string", default: "vlm", description: "Model version (auto-detected)" },
+          max_wait_seconds: { type: "number", default: 300, description: "Maximum time to wait for completion (seconds)" },
+          poll_interval: { type: "number", default: 10, description: "Seconds between status checks" },
         },
         required: ["url"],
       },
     },
     {
       name: "convert_pdf_to_markdown",
-      description: `Alias for convert_to_markdown. Complete workflow: Submit a document URL, wait for completion, return result. ${FORMATS_DESC}.`,
+      description: `Alias for convert_to_markdown. Same one-step workflow for ${FORMATS_DESC}.`,
       inputSchema: {
         type: "object",
         properties: {
-          url: { type: "string" },
+          url: { type: "string", description: `URL of the document. ${FORMATS_DESC}` },
           model_version: { type: "string", default: "vlm" },
           max_wait_seconds: { type: "number", default: 300 },
           poll_interval: { type: "number", default: 10 },
@@ -141,7 +157,18 @@ const SERVER_CARD_JSON = JSON.stringify({
     },
   ],
   resources: [],
-  prompts: [],
+  prompts: [
+    {
+      name: "convert-document",
+      description: "Convert a document URL to Markdown. Call convert_to_markdown, then download with curl and unzip to ./temp/. Aligned with mineru-convert skill.",
+      arguments: [{ name: "documentUrl", description: "HTTP/HTTPS URL of the document to convert", required: true }],
+    },
+    {
+      name: "check-conversion-status",
+      description: "Check conversion task status. When done, use download_result to get zip_url, then curl to download and unzip to ./temp/.",
+      arguments: [{ name: "taskId", description: "Task ID (URL-based) or Batch ID (file upload)", required: false }],
+    },
+  ],
 });
 
 // ---------------------------------------------------------------------------
@@ -171,10 +198,17 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
     return;
   }
 
-  // Health check
+  // Health check (liveness)
   if (method === "GET" && (path === "/" || path === "/health")) {
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(HEALTH_JSON);
+    return;
+  }
+
+  // Readiness probe (per MCP best practices)
+  if (method === "GET" && path === "/ready") {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(READY_JSON);
     return;
   }
 
@@ -190,14 +224,12 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
       await transport.handleRequest(req, res);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      res.writeHead(500, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: msg }));
+      sendError(res, 500, "INTERNAL_ERROR", msg);
     }
     return;
   }
 
-  res.writeHead(404, { "Content-Type": "application/json" });
-  res.end(JSON.stringify({ error: "Not Found" }));
+  sendError(res, 404, "NOT_FOUND", "The requested resource was not found");
 }
 
 // ---------------------------------------------------------------------------
@@ -207,8 +239,7 @@ const server = createHttpServer((req, res) => {
   handleRequest(req, res).catch((err) => {
     console.error(err);
     if (!res.headersSent) {
-      res.writeHead(500, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: "Internal Server Error" }));
+      sendError(res, 500, "INTERNAL_ERROR", "Internal Server Error");
     }
   });
 });
@@ -218,5 +249,6 @@ server.listen(PORT, () => {
   console.log(`  /mcp                            — MCP Streamable HTTP endpoint`);
   console.log(`  /.well-known/mcp/server-card.json — Smithery server scanning`);
   console.log(`  /.well-known/mcp-config         — Config schema`);
-  console.log(`  /health                 — Health check`);
+  console.log(`  /health                         — Liveness probe`);
+  console.log(`  /ready                          — Readiness probe`);
 });

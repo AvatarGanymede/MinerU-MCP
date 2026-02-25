@@ -124,12 +124,64 @@ export default function createServer(
     version: "2.0.0",
   });
 
+  // ----- Prompts (aligned with mineru-convert skill) -----
+  server.prompt(
+    "convert-document",
+    "Convert a document URL to Markdown. Call convert_to_markdown, then download with curl and unzip to ./temp/. Use when the user wants to convert a PDF, Word, PowerPoint, image, or HTML file. Side effect: Calls MinerU API.",
+    { documentUrl: z.string().describe("HTTP/HTTPS URL of the document to convert") },
+    async ({ documentUrl }) => ({
+      messages: [
+        {
+          role: "user" as const,
+          content: {
+            type: "text" as const,
+            text:
+              `Convert this document to Markdown: ${documentUrl}\n\n` +
+              `Workflow:\n` +
+              `1. Call convert_to_markdown with url="${documentUrl}" — the tool returns a download URL when done.\n` +
+              `2. Derive output filename from the URL (e.g. report.pdf → report.zip), then download to ./temp/:\n` +
+              `   curl -L -o ./temp/<filename>.zip "<download_url>" --retry 3 --connect-timeout 30 --max-time 600 -f -s -S\n` +
+              `3. Unzip to ./temp/<filename>/ (same name without .zip):\n` +
+              `   unzip -o ./temp/<filename>.zip -d ./temp/<filename>\n` +
+              `4. Find the .md file(s) inside the extracted directory and read the content.\n` +
+              `5. Ignore other extracted files (JSON, content_list, etc.). Focus only on .md and files they reference (e.g. images).`,
+          },
+        },
+      ],
+    })
+  );
+
+  server.prompt(
+    "check-conversion-status",
+    "Check the status of a document conversion task. When state is done, use download_result to get zip_url, then curl to download and unzip to ./temp/.",
+    {
+      taskId: z.string().optional().describe("Task ID (URL-based) or Batch ID (file upload)"),
+    },
+    async ({ taskId }) => ({
+      messages: [
+        {
+          role: "user" as const,
+          content: {
+            type: "text" as const,
+            text:
+              (taskId
+                ? `Check status of conversion task: ${taskId}\n\n`
+                : "Check conversion status. Use get_task_status with the task_id or batch_id from create_parse_task.\n\n") +
+              `When state is "done":\n` +
+              `1. Get full_zip_url from the response (or call download_result with that URL).\n` +
+              `2. Download with curl to ./temp/: curl -L -o ./temp/<filename>.zip "<zip_url>" --retry 3 --connect-timeout 30 --max-time 600 -f -s -S\n` +
+              `3. Unzip: unzip -o ./temp/<filename>.zip -d ./temp/<filename>\n` +
+              `4. Find .md file(s) in the extracted directory and read content. Ignore other files.`,
+          },
+        },
+      ],
+    })
+  );
+
   // ----- Tool: create_parse_task -----
   server.tool(
     "create_parse_task",
-    `Create a document parsing task on MinerU API. ${FORMATS_DESC}. ` +
-      "Accepts a document URL and returns a task_id for tracking. " +
-      "Model version and OCR are auto-configured based on file type.",
+    `Create a document parsing task on MinerU API. Purpose: Submit a document URL for async conversion. Returns task_id for tracking. Constraints: ${FORMATS_DESC} only. Side effect: Calls MinerU API.`,
     {
       url: z.string().describe(`URL of the document to parse. ${FORMATS_DESC}`),
       model_version: z
@@ -178,9 +230,7 @@ export default function createServer(
   // ----- Tool: get_task_status -----
   server.tool(
     "get_task_status",
-    "Check the status of a document parsing task. " +
-      "Accepts task_id (URL-based) or batch_id (file upload). " +
-      "Returns task state and result download URL when done.",
+    "Check the status of a document parsing task. Purpose: Poll task progress and get download URL when done. Provide task_id (URL) or batch_id (file upload). Returns state and full_zip_url. Side effect: Read-only API call.",
     {
       task_id: z
         .string()
@@ -216,8 +266,7 @@ export default function createServer(
   // ----- Tool: download_result -----
   server.tool(
     "download_result",
-    "Get the download URL for a completed parsing result. " +
-      "Returns the direct download link for the result zip file.",
+    "Get the download URL for a completed parsing result. Purpose: Return the zip URL from get_task_status. After calling, download with curl to ./temp/ and unzip: curl -L -o ./temp/<name>.zip \"<zip_url>\" --retry 3 -f -s -S && unzip -o ./temp/<name>.zip -d ./temp/<name>. No side effect.",
     {
       zip_url: z
         .string()
@@ -385,8 +434,7 @@ export default function createServer(
   // ----- Tool: convert_to_markdown -----
   server.tool(
     "convert_to_markdown",
-    `Complete workflow: Submit a document URL, wait for completion, return the result download URL. ${FORMATS_DESC}. ` +
-      "Auto-detects file type and configures optimal settings.",
+    `One-step document conversion. Purpose: Submit URL, poll until done, return download link. Constraints: ${FORMATS_DESC}. Auto-configures model and OCR. Side effect: Creates task and polls MinerU API. Use for quick conversion.`,
     convertSchema,
     convertHandler
   );
@@ -394,7 +442,7 @@ export default function createServer(
   // ----- Tool: convert_pdf_to_markdown (alias) -----
   server.tool(
     "convert_pdf_to_markdown",
-    `Alias for convert_to_markdown. Complete workflow: Submit a document URL, wait for completion, return result. ${FORMATS_DESC}.`,
+    `Alias for convert_to_markdown. Same one-step workflow for ${FORMATS_DESC}.`,
     convertSchema,
     convertHandler
   );
