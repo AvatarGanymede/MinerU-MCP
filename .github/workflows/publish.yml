@@ -23,4 +23,4 @@ jobs:
 
       - run: npx @smithery/cli mcp publish -n "beilin/mineru-mcp"
         env:
-          SMITHERY_TOKEN: ${{ secrets.SMITHERY_TOKEN }}
+          SMITHERY_API_KEY: ${{ secrets.SMITHERY_TOKEN }}
