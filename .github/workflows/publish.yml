@@ -1,0 +1,25 @@
+name: Publish to Smithery
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "package.json"
+      - "smithery.yaml"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - run: npm ci
+
+      - run: npx @smithery/cli mcp publish -n "beilin/mineru-mcp"
+        env:
+          SMITHERY_TOKEN: ${{ secrets.SMITHERY_TOKEN }}
