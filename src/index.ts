@@ -365,3 +365,11 @@ export default function createServer(
 
   return server;
 }
+
+/**
+ * Sandbox server for Smithery scanning.
+ * Uses a dummy key so Smithery can discover tools without real credentials.
+ */
+export function createSandboxServer() {
+  return createServer({ mineruApiKey: "sandbox-placeholder-key" });
+}
