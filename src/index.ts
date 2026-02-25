@@ -18,9 +18,7 @@ export const configSchema = z.object({
     .describe(
       "Your MinerU API Key (obtain from https://mineru.net/apiManage/token). " +
       "Can also be set via MINERU_API_KEY environment variable."
-    )
-    // Smithery: use header for secrets; default query is ?mineruApiKey=xxx
-    .meta({ "x-from": { header: "x-mineru-api-key" } }),
+    ),
 });
 
 /** Smithery CLI: false = stateless (no session state between requests) */
