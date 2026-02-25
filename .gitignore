@@ -8,3 +8,4 @@ node_modules/
 dist/
 *.js.map
 .smithery/
+/.cursor
