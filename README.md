@@ -108,7 +108,7 @@ npm install
 
 > **注意**：不要设置 `MINERU_API_KEY` 环境变量，每个用户会在 Smithery 添加 MCP 时填写自己的 API Key（通过 configSchema 表单）。
 >
-> **Smithery API Key**：Smithery CLI 需要此变量以跳过交互式提示。在 [Smithery](https://smithery.ai) 注册后可免费获取，然后在 Render Dashboard 的环境变量中添加 `SMITHERY_API_KEY`。
+> **SMITHERY_API_KEY（必需）**：Smithery CLI 在无此变量时会等待交互输入，导致 Render 部署失败（exit 130）。在 [Smithery](https://smithery.ai) 注册后可免费获取 API Key，然后在 Render Dashboard → 该服务 → Environment 中添加 `SMITHERY_API_KEY`。
 
 ## 支持的文件格式
 

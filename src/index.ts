@@ -21,6 +21,9 @@ export const configSchema = z.object({
     ),
 });
 
+/** Smithery CLI: false = stateless (no session state between requests) */
+export const stateful = false;
+
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
