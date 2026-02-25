@@ -107,6 +107,8 @@ npm install
 6. **登记到 Smithery**：在 [Smithery New Server](https://smithery.ai/servers/new) 选择 External MCP / Deploy via URL，填入上述 URL
 
 > **注意**：不要设置 `MINERU_API_KEY` 环境变量，每个用户会在 Smithery 添加 MCP 时填写自己的 API Key（通过 configSchema 表单）。
+>
+> **Smithery API Key**：Smithery CLI 需要此变量以跳过交互式提示。在 [Smithery](https://smithery.ai) 注册后可免费获取，然后在 Render Dashboard 的环境变量中添加 `SMITHERY_API_KEY`。
 
 ## 支持的文件格式
 

@@ -107,6 +107,8 @@ Deploy the TypeScript MCP as a public HTTPS service on [Render](https://render.c
 6. **Register on Smithery**: At [Smithery New Server](https://smithery.ai/servers/new), choose External MCP / Deploy via URL and enter that URL
 
 > **Note**: Do not set the `MINERU_API_KEY` environment variable. Each user enters their own API key when adding the MCP on Smithery (via the configSchema form).
+>
+> **Smithery API Key**: The Smithery CLI requires this to skip interactive prompts. Get a free key at [Smithery](https://smithery.ai), then add `SMITHERY_API_KEY` in Render Dashboard → Environment.
 
 ## Supported File Formats
 

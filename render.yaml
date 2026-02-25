@@ -13,4 +13,7 @@ services:
         value: "20"
       - key: PORT
         value: "10000"
+      # Required by Smithery CLI to skip interactive prompt (get free key from https://smithery.ai)
+      - key: SMITHERY_API_KEY
+        sync: false
     # Do NOT set MINERU_API_KEY here - each user provides their own via Smithery configSchema
