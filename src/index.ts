@@ -88,7 +88,7 @@ export default function createServer(
   }
 
   const server = new McpServer({
-    name: "mineru-document-converter",
+    name: "mineru-markdown-converter",
     version: "2.0.0",
   });
 

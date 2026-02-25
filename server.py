@@ -63,7 +63,7 @@ SPLIT_CHUNK_SIZE_MB = 180
 # Global token, read from environment variable MINERU_API_KEY
 API_TOKEN: str = os.environ.get("MINERU_API_KEY", "")
 
-server = Server("mineru-document-converter")
+server = Server("mineru-markdown-converter")
 
 
 def _auth_headers(token: str) -> dict:
@@ -977,7 +977,7 @@ async def main():
             read_stream,
             write_stream,
             InitializationOptions(
-                server_name="mineru-document-converter",
+                server_name="mineru-markdown-converter",
                 server_version="2.0.0",
                 capabilities=server.get_capabilities(
                     notification_options=NotificationOptions(),
