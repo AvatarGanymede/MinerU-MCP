@@ -70,6 +70,80 @@ const MCP_CONFIG_JSON = JSON.stringify({
 });
 const HEALTH_JSON = JSON.stringify({ status: "ok", service: "mineru-mcp" });
 
+// Smithery server scanning: https://smithery.ai/docs/build/external#server-scanning
+const FORMATS_DESC = "Supported formats: PDF, DOC, DOCX, PPT, PPTX, PNG, JPG, JPEG, HTML";
+const SERVER_CARD_JSON = JSON.stringify({
+  serverInfo: { name: "mineru-markdown-converter", version: "2.0.0" },
+  configSchema: configSchemaJson,
+  tools: [
+    {
+      name: "create_parse_task",
+      description: `Create a document parsing task on MinerU API. ${FORMATS_DESC}. Accepts a document URL and returns a task_id for tracking.`,
+      inputSchema: {
+        type: "object",
+        properties: {
+          url: { type: "string", description: `URL of the document. ${FORMATS_DESC}` },
+          model_version: { type: "string", default: "vlm" },
+          is_ocr: { type: "boolean", default: false },
+          enable_formula: { type: "boolean", default: true },
+          enable_table: { type: "boolean", default: true },
+        },
+        required: ["url"],
+      },
+    },
+    {
+      name: "get_task_status",
+      description: "Check the status of a document parsing task. Accepts task_id or batch_id. Returns task state and result download URL when done.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          task_id: { type: "string" },
+          batch_id: { type: "string" },
+        },
+      },
+    },
+    {
+      name: "download_result",
+      description: "Get the download URL for a completed parsing result.",
+      inputSchema: {
+        type: "object",
+        properties: { zip_url: { type: "string" } },
+        required: ["zip_url"],
+      },
+    },
+    {
+      name: "convert_to_markdown",
+      description: `Complete workflow: Submit a document URL, wait for completion, return the result download URL. ${FORMATS_DESC}.`,
+      inputSchema: {
+        type: "object",
+        properties: {
+          url: { type: "string" },
+          model_version: { type: "string", default: "vlm" },
+          max_wait_seconds: { type: "number", default: 300 },
+          poll_interval: { type: "number", default: 10 },
+        },
+        required: ["url"],
+      },
+    },
+    {
+      name: "convert_pdf_to_markdown",
+      description: `Alias for convert_to_markdown. Complete workflow: Submit a document URL, wait for completion, return result. ${FORMATS_DESC}.`,
+      inputSchema: {
+        type: "object",
+        properties: {
+          url: { type: "string" },
+          model_version: { type: "string", default: "vlm" },
+          max_wait_seconds: { type: "number", default: 300 },
+          poll_interval: { type: "number", default: 10 },
+        },
+        required: ["url"],
+      },
+    },
+  ],
+  resources: [],
+  prompts: [],
+});
+
 // ---------------------------------------------------------------------------
 // Request handler
 // ---------------------------------------------------------------------------
@@ -77,7 +151,17 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
   const method = req.method ?? "GET";
   const path = (req.url ?? "/").split("?")[0];
 
-  // /.well-known/mcp-config
+  // /.well-known/mcp/server-card.json — Smithery server scanning
+  if (method === "GET" && path === "/.well-known/mcp/server-card.json") {
+    res.writeHead(200, {
+      "Content-Type": "application/json",
+      "Cache-Control": "public, max-age=300",
+    });
+    res.end(SERVER_CARD_JSON);
+    return;
+  }
+
+  // /.well-known/mcp-config — config schema (legacy)
   if (method === "GET" && path === "/.well-known/mcp-config") {
     res.writeHead(200, {
       "Content-Type": "application/json",
@@ -131,7 +215,8 @@ const server = createHttpServer((req, res) => {
 
 server.listen(PORT, () => {
   console.log(`MinerU MCP HTTP server listening on http://0.0.0.0:${PORT}`);
-  console.log(`  /mcp                    — MCP Streamable HTTP endpoint`);
-  console.log(`  /.well-known/mcp-config — Config schema (for Smithery)`);
+  console.log(`  /mcp                            — MCP Streamable HTTP endpoint`);
+  console.log(`  /.well-known/mcp/server-card.json — Smithery server scanning`);
+  console.log(`  /.well-known/mcp-config         — Config schema`);
   console.log(`  /health                 — Health check`);
 });
