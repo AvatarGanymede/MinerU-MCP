@@ -13,4 +13,7 @@ async function main() {
   await server.connect(transport);
 }
 
-main();
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

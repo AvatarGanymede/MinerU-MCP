@@ -28,12 +28,20 @@ export const stateful = false;
 // Constants
 // ---------------------------------------------------------------------------
 const MINERU_API_BASE = "https://mineru.net/api/v4";
-const SUPPORTED_EXTENSIONS = [
+const SUPPORTED_EXTENSIONS = new Set([
   ".pdf", ".doc", ".docx", ".ppt", ".pptx",
   ".png", ".jpg", ".jpeg", ".html",
-];
+]);
 const FORMATS_DESC =
   "Supported formats: PDF, DOC, DOCX, PPT, PPTX, PNG, JPG, JPEG, HTML";
+
+/** MinerU API response shape */
+interface MinerUApiResult {
+  code?: number;
+  data?: { task_id?: string; state?: string; full_zip_url?: string; err_msg?: string };
+  error?: string;
+  msg?: string;
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -51,7 +59,7 @@ function guessExtFromUrl(url: string): string | null {
     const dot = pathname.lastIndexOf(".");
     if (dot === -1) return null;
     const ext = pathname.substring(dot).toLowerCase();
-    return SUPPORTED_EXTENSIONS.includes(ext) ? ext : null;
+    return SUPPORTED_EXTENSIONS.has(ext) ? ext : null;
   } catch {
     return null;
   }
@@ -72,6 +80,30 @@ function autoConfigureParams(
 
 function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
+}
+
+async function mineruFetch(
+  url: string,
+  init?: RequestInit
+): Promise<MinerUApiResult> {
+  const res = await fetch(url, init);
+  const text = await res.text();
+  let data: MinerUApiResult;
+  try {
+    data = JSON.parse(text) as MinerUApiResult;
+  } catch {
+    throw new Error(
+      res.ok
+        ? `Invalid JSON response from MinerU API`
+        : `MinerU API error (${res.status}): ${text.slice(0, 200)}`
+    );
+  }
+  if (!res.ok) {
+    throw new Error(
+      data?.error ?? data?.msg ?? `MinerU API error (${res.status})`
+    );
+  }
+  return data;
 }
 
 // ---------------------------------------------------------------------------
@@ -127,7 +159,7 @@ export default function createServer(
       const ext = guessExtFromUrl(url);
       const params = autoConfigureParams(ext, model_version, is_ocr);
 
-      const res = await fetch(`${MINERU_API_BASE}/extract/task`, {
+      const result = await mineruFetch(`${MINERU_API_BASE}/extract/task`, {
         method: "POST",
         headers: authHeaders(apiToken),
         body: JSON.stringify({
@@ -137,7 +169,6 @@ export default function createServer(
           enable_table,
         }),
       });
-      const result = await res.json();
       return {
         content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }],
       };
@@ -169,12 +200,13 @@ export default function createServer(
         };
       }
 
-      const url = task_id
+      const apiUrl = task_id
         ? `${MINERU_API_BASE}/extract/task/${task_id}`
         : `${MINERU_API_BASE}/extract-results/batch/${batch_id}`;
 
-      const res = await fetch(url, { headers: authHeaders(apiToken) });
-      const result = await res.json();
+      const result = await mineruFetch(apiUrl, {
+        headers: authHeaders(apiToken),
+      });
       return {
         content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }],
       };
@@ -216,7 +248,7 @@ export default function createServer(
     const ext = guessExtFromUrl(url);
     const params = autoConfigureParams(ext, model_version);
 
-    const createRes = await fetch(`${MINERU_API_BASE}/extract/task`, {
+    const createResult = await mineruFetch(`${MINERU_API_BASE}/extract/task`, {
       method: "POST",
       headers: authHeaders(apiToken),
       body: JSON.stringify({
@@ -226,7 +258,6 @@ export default function createServer(
         enable_table: true,
       }),
     });
-    const createResult: any = await createRes.json();
 
     if (createResult.code !== 0) {
       return {
@@ -252,17 +283,13 @@ export default function createServer(
     }
 
     let elapsed = 0;
-    let statusResult: any = null;
+    let statusResult: MinerUApiResult | null = null;
 
     while (elapsed < max_wait_seconds) {
-      await sleep(poll_interval * 1000);
-      elapsed += poll_interval;
-
-      const statusRes = await fetch(
+      statusResult = await mineruFetch(
         `${MINERU_API_BASE}/extract/task/${taskId}`,
         { headers: authHeaders(apiToken) }
       );
-      statusResult = await statusRes.json();
 
       if (statusResult.error) {
         return {
@@ -291,7 +318,8 @@ export default function createServer(
             },
           ],
         };
-      } else if (state === "failed") {
+      }
+      if (state === "failed") {
         const errMsg = statusResult.data?.err_msg || "Unknown error";
         return {
           content: [
@@ -301,6 +329,11 @@ export default function createServer(
             },
           ],
         };
+      }
+
+      elapsed += poll_interval;
+      if (elapsed < max_wait_seconds) {
+        await sleep(poll_interval * 1000);
       }
     }
 

@@ -53,6 +53,7 @@ const configSchemaJson = zodToJsonSchema(configSchema, {
 const MCP_CONFIG_JSON = JSON.stringify({
   configSchema: configSchemaJson,
 });
+const HEALTH_JSON = JSON.stringify({ status: "ok", service: "mineru-mcp" });
 
 // ---------------------------------------------------------------------------
 // Request handler
@@ -74,7 +75,7 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
   // Health check
   if (method === "GET" && (path === "/" || path === "/health")) {
     res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ status: "ok", service: "mineru-mcp" }));
+    res.end(HEALTH_JSON);
     return;
   }
 
