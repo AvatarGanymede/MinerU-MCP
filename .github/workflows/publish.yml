@@ -11,6 +11,7 @@ on:
 
 jobs:
   publish:
+    if: false  # Disabled
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
