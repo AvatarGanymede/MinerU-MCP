@@ -95,6 +95,19 @@ Create `.mcp.json` in the project root (Claude Code) or edit `claude_desktop_con
 
 For both options, replace `your_mineru_api_token` with your MinerU API Token (obtain at [https://mineru.net/apiManage/token](https://mineru.net/apiManage/token)).
 
+### Deploy to Render (Deploy via URL, Free)
+
+Deploy the TypeScript MCP as a public HTTPS service on [Render](https://render.com), then register it on Smithery using "Deploy via URL" for free distribution.
+
+1. **Fork & Push**: Ensure this repo is pushed to GitHub
+2. **Create Blueprint**: Go to [Render Dashboard](https://dashboard.render.com/) → New → Blueprint
+3. **Connect Repo**: Select the `MinerU-MCP` repo; Render will read `render.yaml` at the root
+4. **Deploy**: Click Create / Apply and wait for the build to finish
+5. **Get URL**: You'll get an HTTPS URL like `https://mineru-mcp.onrender.com`
+6. **Register on Smithery**: At [Smithery New Server](https://smithery.ai/servers/new), choose External MCP / Deploy via URL and enter that URL
+
+> **Note**: Do not set the `MINERU_API_KEY` environment variable. Each user enters their own API key when adding the MCP on Smithery (via the configSchema form).
+
 ## Supported File Formats
 
 | Format | Extensions | Auto Configuration |

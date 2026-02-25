@@ -6,7 +6,8 @@
   "scripts": {
     "build": "tsc",
     "start": "tsx src/main.ts",
-    "dev": "npx @smithery/cli dev"
+    "dev": "npx @smithery/cli dev",
+    "start:render": "npx @smithery/cli dev --no-tunnel --no-open --port ${PORT:-10000}"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",

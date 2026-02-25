@@ -95,6 +95,19 @@ npm install
 
 两种方式均需将 `your_mineru_api_token` 替换为你的 MinerU API Token（在 [https://mineru.net/apiManage/token](https://mineru.net/apiManage/token) 申请）。
 
+### 部署到 Render（Deploy via URL，免费）
+
+使用 [Render](https://render.com) 将 TypeScript 版 MCP 部署为公开 HTTPS 服务，然后在 Smithery 选择「Deploy via URL」即可免费分发。
+
+1. **Fork 并推送**：确保本仓库代码已推送到 GitHub
+2. **创建 Blueprint**：打开 [Render Dashboard](https://dashboard.render.com/) → New → Blueprint
+3. **连接仓库**：选择 `MinerU-MCP` 仓库，Render 会自动读取根目录的 `render.yaml`
+4. **部署**：点击 Create / Apply，等待构建完成
+5. **获取 URL**：部署完成后会得到 `https://mineru-mcp.onrender.com` 之类的 HTTPS 地址
+6. **登记到 Smithery**：在 [Smithery New Server](https://smithery.ai/servers/new) 选择 External MCP / Deploy via URL，填入上述 URL
+
+> **注意**：不要设置 `MINERU_API_KEY` 环境变量，每个用户会在 Smithery 添加 MCP 时填写自己的 API Key（通过 configSchema 表单）。
+
 ## 支持的文件格式
 
 | 格式 | 扩展名 | 自动配置 |

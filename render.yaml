@@ -1,0 +1,16 @@
+# Render Blueprint - MinerU MCP Server
+# Deploy: https://dashboard.render.com/ > New > Blueprint > Connect this repo
+# Docs: https://docs.render.com/blueprint-spec
+
+services:
+  - type: web
+    runtime: node
+    name: mineru-mcp
+    buildCommand: npm install
+    startCommand: npm run start:render
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: PORT
+        value: "10000"
+    # Do NOT set MINERU_API_KEY here - each user provides their own via Smithery configSchema
