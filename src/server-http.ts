@@ -9,7 +9,7 @@
 import { createServer as createHttpServer } from "node:http";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { zodToJsonSchema } from "zod-to-json-schema";
-import createServer, { configSchema } from "./index.js";
+import createServer, { configSchema, createSandboxServer } from "./index.js";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
 const PORT = parseInt(process.env.PORT || "10000", 10);
@@ -216,7 +216,12 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
   if ((method === "GET" || method === "POST") && path === "/mcp") {
     const config = getConfig(req);
     try {
-      const server = createServer(config);
+      // Use sandbox server when no API key: allows Smithery connection handshake
+      // to succeed (initialize, tools/list). Tool calls will fail with friendly error.
+      const server =
+        config.mineruApiKey || process.env.MINERU_API_KEY
+          ? createServer(config)
+          : createSandboxServer();
       const transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: undefined,
       });

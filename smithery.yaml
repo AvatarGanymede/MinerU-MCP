@@ -1,1 +1,12 @@
 runtime: typescript
+
+# Config schema for Smithery to show API Key form when users connect
+configSchema:
+  type: object
+  properties:
+    mineruApiKey:
+      type: string
+      title: MinerU API Key
+      description: Your MinerU API Key (obtain from https://mineru.net/apiManage/token)
+      x-from:
+        header: x-mineru-api-key

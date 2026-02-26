@@ -113,11 +113,15 @@ export default function createServer(
   config: z.infer<typeof configSchema>
 ) {
   const apiToken = config.mineruApiKey || process.env.MINERU_API_KEY || "";
-  if (!apiToken) {
-    throw new Error(
-      "MinerU API Key is required. Provide it via configSchema or set MINERU_API_KEY environment variable."
-    );
-  }
+
+  const requireApiKey = () => {
+    if (!apiToken || apiToken === SANDBOX_PLACEHOLDER_KEY) {
+      throw new Error(
+        "MinerU API Key is required. Please configure your API key in Smithery/Cursor settings. " +
+          "Get your key from https://mineru.net/apiManage/token"
+      );
+    }
+  };
 
   const server = new McpServer({
     name: "mineru-markdown-converter",
@@ -208,6 +212,7 @@ export default function createServer(
         .describe("Enable table recognition"),
     },
     async ({ url, model_version, is_ocr, enable_formula, enable_table }) => {
+      requireApiKey();
       const ext = guessExtFromUrl(url);
       const params = autoConfigureParams(ext, model_version, is_ocr);
 
@@ -242,6 +247,7 @@ export default function createServer(
         .describe("Batch ID returned from create_parse_task (file upload)"),
     },
     async ({ task_id, batch_id }) => {
+      requireApiKey();
       if (!task_id && !batch_id) {
         return {
           content: [
@@ -294,6 +300,7 @@ export default function createServer(
     max_wait_seconds: number,
     poll_interval: number
   ) {
+    requireApiKey();
     const ext = guessExtFromUrl(url);
     const params = autoConfigureParams(ext, model_version);
 
@@ -450,10 +457,14 @@ export default function createServer(
   return server;
 }
 
+/** Placeholder key for sandbox mode — connection works, tools return friendly error */
+export const SANDBOX_PLACEHOLDER_KEY = "sandbox-placeholder-key";
+
 /**
- * Sandbox server for Smithery scanning.
- * Uses a dummy key so Smithery can discover tools without real credentials.
+ * Sandbox server for Smithery scanning and connection handshake.
+ * Uses a dummy key so Smithery can discover tools and connect without real credentials.
+ * Tool calls return a friendly error asking the user to configure their API key.
  */
 export function createSandboxServer() {
-  return createServer({ mineruApiKey: "sandbox-placeholder-key" });
+  return createServer({ mineruApiKey: SANDBOX_PLACEHOLDER_KEY });
 }
