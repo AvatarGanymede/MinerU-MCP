@@ -87,6 +87,8 @@ function sendError(
 }
 
 // Smithery server scanning: https://smithery.ai/docs/build/external#server-scanning
+// Annotations: audience (user/assistant), priority (0-1), lastModified — improve Tool Quality score
+const TOOL_ANNOTATIONS = { audience: ["assistant"], priority: 0.9, lastModified: "2025-02-26T00:00:00Z" };
 const FORMATS_DESC = "Supported formats: PDF, DOC, DOCX, PPT, PPTX, PNG, JPG, JPEG, HTML";
 const SERVER_CARD_JSON = JSON.stringify({
   serverInfo: { name: "mineru-markdown-converter", version: "2.0.0" },
@@ -106,6 +108,7 @@ const SERVER_CARD_JSON = JSON.stringify({
         },
         required: ["url"],
       },
+      annotations: TOOL_ANNOTATIONS,
     },
     {
       name: "get_task_status",
@@ -117,6 +120,7 @@ const SERVER_CARD_JSON = JSON.stringify({
           batch_id: { type: "string", description: "Batch ID returned from create_parse_task (file upload)" },
         },
       },
+      annotations: TOOL_ANNOTATIONS,
     },
     {
       name: "download_result",
@@ -126,6 +130,7 @@ const SERVER_CARD_JSON = JSON.stringify({
         properties: { zip_url: { type: "string", description: "URL of the result zip file (from get_task_status). Use curl to download to ./temp/, then unzip." } },
         required: ["zip_url"],
       },
+      annotations: TOOL_ANNOTATIONS,
     },
     {
       name: "convert_to_markdown",
@@ -140,6 +145,7 @@ const SERVER_CARD_JSON = JSON.stringify({
         },
         required: ["url"],
       },
+      annotations: { ...TOOL_ANNOTATIONS, priority: 1 },
     },
     {
       name: "convert_pdf_to_markdown",
@@ -154,6 +160,7 @@ const SERVER_CARD_JSON = JSON.stringify({
         },
         required: ["url"],
       },
+      annotations: { ...TOOL_ANNOTATIONS, priority: 0.8 },
     },
   ],
   resources: [],
