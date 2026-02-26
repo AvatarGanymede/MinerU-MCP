@@ -8,8 +8,7 @@
  */
 import { createServer as createHttpServer } from "node:http";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import { zodToJsonSchema } from "zod-to-json-schema";
-import createServer, { configSchema, createSandboxServer } from "./index.js";
+import createServer, { createSandboxServer } from "./index.js";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
 const PORT = parseInt(process.env.PORT || "10000", 10);
@@ -52,18 +51,20 @@ function getConfig(req: IncomingMessage): { mineruApiKey?: string } {
 }
 
 // ---------------------------------------------------------------------------
-// /.well-known/mcp-config — exposes config schema for Smithery form generation
+// Config schema for Smithery — must match Session Config format exactly
+// https://smithery.ai/docs/build/session-config
 // ---------------------------------------------------------------------------
-const configSchemaJson = zodToJsonSchema(configSchema, {
-  target: "openApi3",
-  $refStrategy: "none",
-}) as Record<string, unknown>;
-
-// Smithery: x-from tells gateway to pass mineruApiKey via header (for secrets)
-const props = (configSchemaJson.properties ?? {}) as Record<string, Record<string, unknown>>;
-if (props.mineruApiKey) {
-  props.mineruApiKey["x-from"] = { header: "x-mineru-api-key" };
-}
+const configSchemaJson: Record<string, unknown> = {
+  type: "object",
+  properties: {
+    mineruApiKey: {
+      type: "string",
+      title: "MinerU API Key",
+      description: "Your MinerU API Key (obtain from https://mineru.net/apiManage/token)",
+      "x-from": { header: "x-mineru-api-key" },
+    },
+  },
+};
 
 const MCP_CONFIG_JSON = JSON.stringify({
   configSchema: configSchemaJson,
@@ -185,17 +186,35 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
   const method = req.method ?? "GET";
   const path = (req.url ?? "/").split("?")[0];
 
-  // /.well-known/mcp/server-card.json — Smithery server scanning
+  const corsHeaders = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET",
+    "Access-Control-Allow-Headers": "Content-Type",
+  };
+
+  // /.well-known/mcp/server-card.json — Smithery server scanning (includes configSchema)
   if (method === "GET" && path === "/.well-known/mcp/server-card.json") {
     res.writeHead(200, {
       "Content-Type": "application/json",
       "Cache-Control": "public, max-age=300",
+      ...corsHeaders,
     });
     res.end(SERVER_CARD_JSON);
     return;
   }
 
-  // /.well-known/mcp-config — config schema (legacy)
+  // /.well-known/mcp.json — alternate discovery path (SEP-1649)
+  if (method === "GET" && path === "/.well-known/mcp.json") {
+    res.writeHead(200, {
+      "Content-Type": "application/json",
+      "Cache-Control": "public, max-age=300",
+      ...corsHeaders,
+    });
+    res.end(SERVER_CARD_JSON);
+    return;
+  }
+
+  // /.well-known/mcp-config — config schema only (legacy)
   if (method === "GET" && path === "/.well-known/mcp-config") {
     res.writeHead(200, {
       "Content-Type": "application/json",
