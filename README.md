@@ -46,7 +46,7 @@ uvx mineru-converter-mcp-server stdio
   "mcpServers": {
     "mineru": {
       "command": "uvx",
-      "args": ["mineru-converter-mcp-server", "stdio"],
+      "args": ["--with", "mineru-converter-mcp-server", "python", "-m", "mineru_mcp", "stdio"],
       "env": {
         "MINERU_API_KEY": "your_mineru_api_token"
       }
@@ -55,7 +55,7 @@ uvx mineru-converter-mcp-server stdio
 }
 ```
 
-> **说明**：包发布到 PyPI 后生效。开发阶段可从源码安装：`uv pip install -e .` 后使用 `mineru-converter-mcp-server stdio`。
+> **说明**：使用 `-m mineru_mcp` 模块方式启动，可规避 Windows 下 uvx console script 的兼容问题。开发阶段可从源码安装：`uv pip install -e .` 后使用 `mineru-converter-mcp-server stdio`。
 
 #### 方式二：Python 版（功能完整，支持本地文件和大文件拆分）
 

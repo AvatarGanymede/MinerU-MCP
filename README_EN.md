@@ -46,7 +46,7 @@ Edit Claude Desktop or Cursor MCP configuration:
   "mcpServers": {
     "mineru": {
       "command": "uvx",
-      "args": ["mineru-converter-mcp-server", "stdio"],
+      "args": ["--with", "mineru-converter-mcp-server", "python", "-m", "mineru_mcp", "stdio"],
       "env": {
         "MINERU_API_KEY": "your_mineru_api_token"
       }
@@ -55,7 +55,7 @@ Edit Claude Desktop or Cursor MCP configuration:
 }
 ```
 
-> **Note**: Works after the package is published to PyPI. During development, install from source: `uv pip install -e .` then run `mineru-converter-mcp-server stdio`.
+> **Note**: Using `-m mineru_mcp` bypasses a known uvx console script compatibility issue on Windows. During development: `uv pip install -e .` then `mineru-converter-mcp-server stdio`.
 
 #### Option B: Python version (full features, supports local files and large file splitting)
 
