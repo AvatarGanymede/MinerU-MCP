@@ -28,7 +28,36 @@ Visit [https://mineru.net/apiManage/token](https://mineru.net/apiManage/token) t
 
 ### 3. Configure MCP Client
 
-#### Option A: Python version (full features, supports local files and large file splitting)
+#### Option A: uvx (Recommended, no manual dependency install)
+
+With [uv](https://docs.astral.sh/uv/) installed, run directly via `uvx` without `pip install`:
+
+```bash
+uvx mineru-mcp-server stdio
+```
+
+Edit Claude Desktop or Cursor MCP configuration:
+
+**Windows**: `%APPDATA%\Claude\claude_desktop_config.json` or Cursor MCP settings
+**macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "mineru": {
+      "command": "uvx",
+      "args": ["mineru-mcp-server", "stdio"],
+      "env": {
+        "MINERU_API_KEY": "your_mineru_api_token"
+      }
+    }
+  }
+}
+```
+
+> **Note**: Works after the package is published to PyPI. During development, install from source: `uv pip install -e .` then run `mineru-mcp-server stdio`.
+
+#### Option B: Python version (full features, supports local files and large file splitting)
 
 Edit the Claude Desktop configuration file:
 
@@ -49,7 +78,7 @@ Edit the Claude Desktop configuration file:
 }
 ```
 
-#### Option B: TypeScript version (for Smithery deployment and local dev)
+#### Option C: TypeScript version (for Smithery deployment and local dev)
 
 Requires Node.js 20+ and project dependencies:
 

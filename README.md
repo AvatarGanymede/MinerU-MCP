@@ -28,7 +28,36 @@ pip install -r requirements.txt
 
 ### 3. 配置 MCP 客户端
 
-#### 方式一：Python 版（功能完整，支持本地文件和大文件拆分）
+#### 方式一：uvx 启动（推荐，无需手动安装依赖）
+
+安装 [uv](https://docs.astral.sh/uv/) 后，可直接通过 `uvx` 运行，无需 `pip install`：
+
+```bash
+uvx mineru-mcp-server stdio
+```
+
+编辑 Claude Desktop 或 Cursor MCP 配置文件：
+
+**Windows**: `%APPDATA%\Claude\claude_desktop_config.json` 或 Cursor 设置中的 MCP 配置
+**macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "mineru": {
+      "command": "uvx",
+      "args": ["mineru-mcp-server", "stdio"],
+      "env": {
+        "MINERU_API_KEY": "your_mineru_api_token"
+      }
+    }
+  }
+}
+```
+
+> **说明**：包发布到 PyPI 后生效。开发阶段可从源码安装：`uv pip install -e .` 后使用 `mineru-mcp-server stdio`。
+
+#### 方式二：Python 版（功能完整，支持本地文件和大文件拆分）
 
 编辑 Claude Desktop 配置文件：
 
@@ -49,7 +78,7 @@ pip install -r requirements.txt
 }
 ```
 
-#### 方式二：TypeScript 版（适用于 Smithery 部署和本地开发）
+#### 方式三：TypeScript 版（适用于 Smithery 部署和本地开发）
 
 需要先安装 Node.js 20+ 和项目依赖：
 
