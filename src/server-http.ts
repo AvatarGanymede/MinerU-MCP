@@ -91,9 +91,12 @@ function sendError(
 // Annotations: audience (user/assistant), priority (0-1), lastModified — improve Tool Quality score
 const TOOL_ANNOTATIONS = { audience: ["assistant"], priority: 0.9, lastModified: "2025-02-26T00:00:00Z" };
 const FORMATS_DESC = "Supported formats: PDF, DOC, DOCX, PPT, PPTX, PNG, JPG, JPEG, HTML";
+// Static Server Card per https://smithery.ai/docs/build/external#static-server-card-manual-metadata
+// Fields: serverInfo (required), authentication (optional), tools, resources, prompts (optional)
+// configSchema is NOT part of server card — use CLI --config-schema when publishing
 const SERVER_CARD_JSON = JSON.stringify({
   serverInfo: { name: "mineru-markdown-converter", version: "2.0.0" },
-  configSchema: configSchemaJson,
+  authentication: { required: true, schemes: ["bearer"] },
   tools: [
     {
       name: "create_parse_task",
@@ -192,7 +195,7 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
     "Access-Control-Allow-Headers": "Content-Type",
   };
 
-  // /.well-known/mcp/server-card.json — Smithery server scanning (includes configSchema)
+  // /.well-known/mcp/server-card.json — Static Server Card (Smithery manual metadata)
   if (method === "GET" && path === "/.well-known/mcp/server-card.json") {
     res.writeHead(200, {
       "Content-Type": "application/json",
@@ -203,22 +206,12 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
     return;
   }
 
-  // /.well-known/mcp.json — alternate discovery path (SEP-1649)
-  if (method === "GET" && path === "/.well-known/mcp.json") {
-    res.writeHead(200, {
-      "Content-Type": "application/json",
-      "Cache-Control": "public, max-age=300",
-      ...corsHeaders,
-    });
-    res.end(SERVER_CARD_JSON);
-    return;
-  }
-
-  // /.well-known/mcp-config — config schema only (legacy)
+  // /.well-known/mcp-config — config schema (CLI --config-schema or Smithery fetch)
   if (method === "GET" && path === "/.well-known/mcp-config") {
     res.writeHead(200, {
       "Content-Type": "application/json",
       "Cache-Control": "public, max-age=300",
+      ...corsHeaders,
     });
     res.end(MCP_CONFIG_JSON);
     return;
