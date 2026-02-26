@@ -59,6 +59,8 @@ Edit Claude Desktop or Cursor MCP configuration:
 
 #### Option B: Python version (full features, supports local files and large file splitting)
 
+Install dependencies first: `pip install -r requirements.txt`
+
 Edit the Claude Desktop configuration file:
 
 **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
@@ -69,7 +71,8 @@ Edit the Claude Desktop configuration file:
   "mcpServers": {
     "mineru": {
       "command": "python",
-      "args": ["C:/path/to/server.py"],
+      "args": ["src/mineru_mcp/server.py"],
+      "cwd": "C:/path/to/MinerU-MCP",
       "env": {
         "MINERU_API_KEY": "your_mineru_api_token"
       }
@@ -77,6 +80,8 @@ Edit the Claude Desktop configuration file:
   }
 }
 ```
+
+> Replace `C:/path/to/MinerU-MCP` with your project path. The `cwd` ensures running from the project root.
 
 #### Option C: TypeScript version (for Smithery deployment and local dev)
 

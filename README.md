@@ -59,6 +59,8 @@ uvx mineru-converter-mcp-server stdio
 
 #### 方式二：Python 版（功能完整，支持本地文件和大文件拆分）
 
+需先安装依赖：`pip install -r requirements.txt`
+
 编辑 Claude Desktop 配置文件：
 
 **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
@@ -69,7 +71,8 @@ uvx mineru-converter-mcp-server stdio
   "mcpServers": {
     "mineru": {
       "command": "python",
-      "args": ["C:/path/to/server.py"],
+      "args": ["src/mineru_mcp/server.py"],
+      "cwd": "C:/path/to/MinerU-MCP",
       "env": {
         "MINERU_API_KEY": "your_mineru_api_token"
       }
@@ -77,6 +80,8 @@ uvx mineru-converter-mcp-server stdio
   }
 }
 ```
+
+> 将 `C:/path/to/MinerU-MCP` 替换为项目实际路径。`cwd` 确保从项目根目录运行。
 
 #### 方式三：TypeScript 版（适用于 Smithery 部署和本地开发）
 

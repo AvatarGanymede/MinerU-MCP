@@ -977,10 +977,14 @@ async def run_stdio():
             write_stream,
             InitializationOptions(
                 server_name="mineru-markdown-converter",
-                server_version="1.0.0rc1",
+                server_version="1.0.0rc2",
                 capabilities=server.get_capabilities(
                     notification_options=NotificationOptions(),
                     experimental_capabilities={},
                 ),
             ),
         )
+
+
+if __name__ == "__main__":
+    asyncio.run(run_stdio())
