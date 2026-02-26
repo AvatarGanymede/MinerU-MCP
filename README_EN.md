@@ -33,7 +33,7 @@ Visit [https://mineru.net/apiManage/token](https://mineru.net/apiManage/token) t
 With [uv](https://docs.astral.sh/uv/) installed, run directly via `uvx` without `pip install`:
 
 ```bash
-uvx mineru-mcp-server stdio
+uvx mineru-converter-mcp-server stdio
 ```
 
 Edit Claude Desktop or Cursor MCP configuration:
@@ -46,7 +46,7 @@ Edit Claude Desktop or Cursor MCP configuration:
   "mcpServers": {
     "mineru": {
       "command": "uvx",
-      "args": ["mineru-mcp-server", "stdio"],
+      "args": ["mineru-converter-mcp-server", "stdio"],
       "env": {
         "MINERU_API_KEY": "your_mineru_api_token"
       }
@@ -55,7 +55,7 @@ Edit Claude Desktop or Cursor MCP configuration:
 }
 ```
 
-> **Note**: Works after the package is published to PyPI. During development, install from source: `uv pip install -e .` then run `mineru-mcp-server stdio`.
+> **Note**: Works after the package is published to PyPI. During development, install from source: `uv pip install -e .` then run `mineru-converter-mcp-server stdio`.
 
 #### Option B: Python version (full features, supports local files and large file splitting)
 

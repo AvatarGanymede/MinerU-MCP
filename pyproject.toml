@@ -1,5 +1,5 @@
 [project]
-name = "mineru-mcp-server"
+name = "mineru-converter-mcp-server"
 version = "2.0.0"
 description = "MCP server for converting documents (PDF, DOC, DOCX, PPT, PPTX, PNG, JPG, JPEG, HTML) to Markdown using MinerU API"
 readme = "README.md"
@@ -15,7 +15,7 @@ dependencies = [
 ]
 
 [project.scripts]
-mineru-mcp-server = "mineru_mcp.__main__:app"
+mineru-converter-mcp-server = "mineru_mcp.__main__:app"
 
 [build-system]
 requires = ["hatchling"]

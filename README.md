@@ -33,7 +33,7 @@ pip install -r requirements.txt
 安装 [uv](https://docs.astral.sh/uv/) 后，可直接通过 `uvx` 运行，无需 `pip install`：
 
 ```bash
-uvx mineru-mcp-server stdio
+uvx mineru-converter-mcp-server stdio
 ```
 
 编辑 Claude Desktop 或 Cursor MCP 配置文件：
@@ -46,7 +46,7 @@ uvx mineru-mcp-server stdio
   "mcpServers": {
     "mineru": {
       "command": "uvx",
-      "args": ["mineru-mcp-server", "stdio"],
+      "args": ["mineru-converter-mcp-server", "stdio"],
       "env": {
         "MINERU_API_KEY": "your_mineru_api_token"
       }
@@ -55,7 +55,7 @@ uvx mineru-mcp-server stdio
 }
 ```
 
-> **说明**：包发布到 PyPI 后生效。开发阶段可从源码安装：`uv pip install -e .` 后使用 `mineru-mcp-server stdio`。
+> **说明**：包发布到 PyPI 后生效。开发阶段可从源码安装：`uv pip install -e .` 后使用 `mineru-converter-mcp-server stdio`。
 
 #### 方式二：Python 版（功能完整，支持本地文件和大文件拆分）
 
