@@ -106,7 +106,12 @@ npm install
 3. **连接仓库**：选择 `MinerU-MCP` 仓库，Render 会自动读取根目录的 `render.yaml`
 4. **部署**：点击 Create / Apply，等待构建完成
 5. **获取 URL**：部署完成后会得到 `https://mineru-mcp.onrender.com` 之类的 HTTPS 地址
-6. **登记到 Smithery**：在 [Smithery New Server](https://smithery.ai/servers/new) 选择 External MCP / Deploy via URL，填入上述 URL
+6. **登记到 Smithery**：
+   - **网页**：在 [Smithery New Server](https://smithery.ai/servers/new) 选择 External MCP / Deploy via URL，填入上述 URL（会有 config schema 警告，可忽略；用户在 Add Parameter 中手动填 `mineruApiKey`）
+   - **CLI（推荐，消除警告）**：`smithery auth login` 登录后执行：
+     ```bash
+     smithery mcp publish "https://你的Render地址/mcp" -n @你的命名空间/mineru-mcp --config-schema '{"type":"object","properties":{"mineruApiKey":{"type":"string","title":"MinerU API Key","description":"Your MinerU API Key (obtain from https://mineru.net/apiManage/token)","x-from":{"header":"x-mineru-api-key"}}}}'
+     ```
 
 > **Smithery Deploy via URL**：不设置 `MINERU_API_KEY`，每个用户会在 Smithery 添加 MCP 时填写自己的 API Key。
 >
