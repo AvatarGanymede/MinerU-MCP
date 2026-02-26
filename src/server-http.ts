@@ -92,11 +92,12 @@ function sendError(
 const TOOL_ANNOTATIONS = { audience: ["assistant"], priority: 0.9, lastModified: "2025-02-26T00:00:00Z" };
 const FORMATS_DESC = "Supported formats: PDF, DOC, DOCX, PPT, PPTX, PNG, JPG, JPEG, HTML";
 // Static Server Card per https://smithery.ai/docs/build/external#static-server-card-manual-metadata
-// Fields: serverInfo (required), authentication (optional), tools, resources, prompts (optional)
-// configSchema is NOT part of server card — use CLI --config-schema when publishing
+// Standard: serverInfo, authentication, tools, resources, prompts
+// configSchema: Smithery web deploy only reads server-card, so we add it as extension for "Add Parameter" form
 const SERVER_CARD_JSON = JSON.stringify({
   serverInfo: { name: "mineru-markdown-converter", version: "2.0.0" },
   authentication: { required: true, schemes: ["bearer"] },
+  configSchema: configSchemaJson,
   tools: [
     {
       name: "create_parse_task",
