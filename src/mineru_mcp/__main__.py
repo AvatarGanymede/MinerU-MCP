@@ -7,6 +7,11 @@ from .server import run_stdio
 app = typer.Typer(help="MinerU MCP Server - Document to Markdown converter")
 
 
+@app.callback()
+def callback():
+    """MinerU MCP Server - Document to Markdown converter"""
+
+
 @app.command()
 def stdio():
     """Start MinerU MCP Server in stdio mode (for MCP clients like Claude, Cursor)."""
