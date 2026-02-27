@@ -1,60 +1,93 @@
 ---
 name: convert-to-markdown
-description: Convert a document (PDF, DOC, DOCX, PPT, PPTX, PNG, JPG, JPEG, HTML) to Markdown via MinerU API, then analyze or save the result.
+description: >
+  Convert documents to Markdown via the MinerU MCP server (mineru-converter).
+  Supports both URLs and local file paths.
+  Supported formats: PDF, DOC, DOCX, PPT, PPTX, PNG, JPG, JPEG, HTML.
+  Use when the user wants to: (1) convert a file or URL to Markdown,
+  (2) extract text/tables/formulas from a document, (3) parse or read a PDF/DOC/PPT/image,
+  (4) analyze document content, or (5) OCR an image or scanned PDF.
+  This skill handles both local files and URLs. For URL-only conversion via the
+  Smithery-deployed TypeScript server, use the mineru-convert skill instead.
 ---
 
-# Document to Markdown Conversion & Analysis
+# Document to Markdown Conversion
 
-Use the MinerU MCP server to convert a document to Markdown. Supports both URL and local file paths. Supports PDF, DOC, DOCX, PPT, PPTX, PNG, JPG, JPEG, HTML formats.
+Convert documents to Markdown using the `mineru-converter` MCP tools. Supports URLs and local file paths. The server auto-detects file type and configures optimal settings (model, OCR, etc.).
 
-## Input
+## MCP Tools Reference
 
-The user will provide:
+### Primary tool — use this by default
 
-1. **Document source** (required): a URL or a local file path
-2. **Output path** (optional): a local path to save the converted result
+- **`convert_to_markdown`** — Complete workflow: submit → poll → download. Parameters:
+  - `url` (required): URL or local file path
+  - `output_path` (required): local path to save the result zip (e.g., `./temp/report.zip`)
+  - `model_version` (optional, default `"vlm"`): auto-detected; `"MinerU-HTML"` for HTML files
+  - `max_wait_seconds` (optional, default `300`): increase for large documents (e.g., `600` for 100+ page PDFs)
+  - `poll_interval` (optional, default `10`)
+  - `convert_pdf_to_markdown` is an identical alias
 
-## Important Rules
+### Step-by-step tools — use when finer control is needed
 
-1. **Always use relative paths when executing shell commands.** Never use absolute paths. Never `cd` to an absolute path before running a command — just use relative paths directly.
-2. **Auto-extract zip files.** When the output is a zip file, automatically unzip it to the same directory (same name without `.zip` extension). Do NOT delete the zip file after extraction.
+1. **`create_parse_task`** — Submit a parsing task. Extra parameters:
+   - `is_ocr` (default `false`): force OCR on; auto-enabled for images
+   - `enable_formula` (default `true`): formula recognition
+   - `enable_table` (default `true`): table recognition
+   - Returns `task_id` (URL input) or `batch_id` (local file input)
+
+2. **`get_task_status`** — Poll task progress. Pass `task_id` or `batch_id`.
+
+3. **`download_result`** — Download the result zip. Parameters: `zip_url`, `output_path`.
+
+Use step-by-step tools when the user needs to: disable formula/table recognition, force OCR, submit multiple tasks in parallel, or check a previously submitted task.
 
 ## Workflow
 
-### 1. Determine the document source type
+### 1. Determine output path
 
-- If the input looks like a URL (starts with `http://` or `https://`), use it directly.
-- If the input is a local file path, pass it directly to the MCP tool — the server will automatically upload the file via the batch upload API and return a `batch_id` for tracking.
+- If the user provided an output path, use it (ensure it ends in `.zip`).
+- Otherwise, derive from the filename: `./temp/<filename_without_ext>.zip`
+  - URL example: `https://example.com/report.pdf` → `./temp/report.zip`
+  - Local example: `C:\docs\slides.pptx` → `./temp/slides.zip`
 
-### 2. Convert
+### 2. Call `convert_to_markdown`
 
-- If the user provided an **output path**, call the MCP tool `convert_to_markdown` (or `convert_pdf_to_markdown`) with both `url` (the URL or local file path) and `output_path`. This will submit the task, poll until completion, and download the result zip to the specified path.
-- If the user did **not** provide an output path, use `./temp/<filename>.zip` as the default output path.
-- The server **auto-detects file type** and configures optimal settings:
-  - HTML files use the `MinerU-HTML` model
-  - Image files automatically enable OCR
-  - Large PDFs are handled automatically based on file size:
-    - **>600 pages but ≤200MB**: Uses `page_ranges` parameter to split processing into batches (no physical file splitting needed, the API handles it)
-    - **>200MB**: Must physically split the PDF into smaller chunk files first (the API rejects uploads over 200MB), then upload and process each chunk separately
+Pass `url` (the URL or local file path as-is) and `output_path`. The server handles:
 
-### 3. Extract & Read
+- Local file upload via batch API automatically
+- HTML → `MinerU-HTML` model, images → OCR enabled
+- Large PDFs: >600 pages uses page ranges; >200MB splits the file into chunks
+- Polling until completion or timeout
 
-After the zip is downloaded:
+For large documents (100+ pages), set `max_wait_seconds` to `600` or higher.
 
-1. Unzip it to a directory next to the zip file (same name without `.zip` extension).
-2. Find the `.md` file(s) inside the extracted directory.
+### 3. Extract and read
+
+After the zip downloads:
+
+1. Unzip to a sibling directory (same name without `.zip`):
+   ```bash
+   unzip -o ./temp/report.zip -d ./temp/report
+   ```
+2. Find `.md` files inside the extracted directory.
 3. Read the Markdown content.
-4. If the Markdown references other files (e.g. images via `![](images/xxx.png)`), note their paths — these are the only other files that matter.
-5. **Ignore all other extracted files** (JSON, content_list, middle results, etc.). Only focus on the `.md` file(s) and the files they reference.
+4. Note any referenced files (e.g., `![](images/xxx.png)`) — ignore all other files (JSON, content_list, etc.).
+5. Do NOT delete the zip file.
 
 ### 4. Respond
 
-- **If the user asked for analysis**: Read the Markdown content and provide a summary or answer the user's questions about it.
-- **If the user specified an output path**: Confirm the file has been saved and tell the user the exact path of the extracted Markdown file(s).
-- **Both**: If the user asked for both output and analysis, do both.
+- **Analysis requested**: Read the Markdown and answer the user's questions or provide a summary.
+- **Output path specified**: Confirm save location and show the exact path of the `.md` file(s).
+- **No specific request**: Show the extracted Markdown path and offer to analyze the content.
+
+## Rules
+
+1. Always use relative paths in shell commands. Never `cd` to an absolute path.
+2. Always auto-extract zip files after download. Do not delete the zip.
+3. Pass local file paths directly to the MCP tool — do not attempt to upload manually.
 
 ## Error Handling
 
-- If task creation or file upload fails, report the error from the API response.
-- If the task times out, return the `task_id` or `batch_id` and suggest using `get_task_status` to check later.
-- If download or extraction fails, return the `full_zip_url` so the user can download manually.
+- **Task creation / upload failure**: Report the API error message.
+- **Timeout**: Return the `task_id` or `batch_id` and suggest calling `get_task_status` to check later. Consider retrying with a higher `max_wait_seconds`.
+- **Download / extraction failure**: Return the `full_zip_url` for manual download.
