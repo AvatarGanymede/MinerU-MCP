@@ -977,7 +977,7 @@ async def run_stdio():
             write_stream,
             InitializationOptions(
                 server_name="mineru-markdown-converter",
-                server_version="1.0.0rc4",
+                server_version="1.0.0rc5",
                 capabilities=server.get_capabilities(
                     notification_options=NotificationOptions(),
                     experimental_capabilities={},

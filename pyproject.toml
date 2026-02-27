@@ -1,6 +1,6 @@
 [project]
 name = "mineru-converter-mcp-server"
-version = "1.0.0rc4"
+version = "1.0.0rc5"
 description = "MCP server for converting documents (PDF, DOC, DOCX, PPT, PPTX, PNG, JPG, JPEG, HTML) to Markdown using MinerU API"
 readme = "README.md"
 requires-python = ">=3.10"
